@@ -47,7 +47,7 @@ jobs:
           shell: bash
           run: |
             # BuildDataSource
-            dotnet build ./QuantConnect.DataSource.csproj /p:Configuration=Release /v:quiet /p:WarningLevel=1 && \
+            dotnet build ./QuantConnect.DataSource.MetaTrader.csproj /p:Configuration=Release /v:quiet /p:WarningLevel=1 && \
             # BuildTests
             dotnet build ./tests/Tests.csproj /p:Configuration=Release /v:quiet /p:WarningLevel=1 && \
             # Run Tests

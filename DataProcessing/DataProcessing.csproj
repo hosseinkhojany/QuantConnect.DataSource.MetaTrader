@@ -13,7 +13,7 @@
         <PackageReference Include="fasterflect" Version="3.0.0" />
     </ItemGroup>
     <ItemGroup>
-        <ProjectReference Include="..\QuantConnect.DataSource.csproj" />
+        <ProjectReference Include="..\QuantConnect.DataSource.MetaTrader.csproj" />
     </ItemGroup>
     <ItemGroup>
         <None Remove="CLRImports.py" />

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * QUANTCONNECT.COM - Democratizing Finance, Empowering Individuals.
  * Lean Algorithmic Trading Engine v2.0. Copyright 2014 QuantConnect Corporation.
  *
@@ -23,12 +23,12 @@ using System.Collections.Generic;
 using QuantConnect.Lean.Engine.DataFeeds;
 using QuantConnect.Lean.Engine.HistoricalData;
 
-namespace QuantConnect.Lean.DataSource.MyCustom
+namespace QuantConnect.DataSource.MetaTrader.QuantConnect.DataSource.MetaTrader.MetaTrader
 {
     /// <summary>
     /// Implementation of Custom Data Provider
     /// </summary>
-    public class MyCustomDataProvider : SynchronizingHistoryProvider, IDataQueueHandler
+    public class MetaTraderDataProvider : SynchronizingHistoryProvider, IDataQueueHandler
     {
         /// <summary>
         /// <inheritdoc cref="IDataAggregator"/>
@@ -49,7 +49,7 @@ namespace QuantConnect.Lean.DataSource.MyCustom
         public override void Initialize(HistoryProviderInitializeParameters parameters)
         { }
 
-        /// <inheritdoc cref="HistoryProviderBase.GetHistory(IEnumerable{HistoryRequest}, DateTimeZone)"/>
+        /// <inheritdoc cref="MetaTraderDataProvider.GetHistory(IEnumerable{HistoryRequest}, DateTimeZone)"/>
         public override IEnumerable<Slice> GetHistory(IEnumerable<HistoryRequest> requests, DateTimeZone sliceTimeZone)
         {
             // Create subscription objects from the configs
@@ -115,7 +115,7 @@ namespace QuantConnect.Lean.DataSource.MyCustom
         /// <exception cref="NotImplementedException"></exception>
         public void SetJob(Packets.LiveNodePacket job)
         {
-            throw new NotImplementedException();
+
         }
 
         /// <summary>

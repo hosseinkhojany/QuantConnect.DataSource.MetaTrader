@@ -18,7 +18,7 @@ using QuantConnect.Data;
 using QuantConnect.Util;
 using QuantConnect.Orders;
 using QuantConnect.Algorithm;
-using QuantConnect.DataSource;
+using QuantConnect.DataSource.MetaTrader;
 
 namespace QuantConnect.DataLibrary.Tests
 {

@@ -6,10 +6,10 @@ vendorNameDatasetNameUniverse=${vendorNameDatasetName}Universe
 mv MyCustomDataType.cs ${vendorNameDatasetName}.cs
 mv MyCustomDataUniverseType.cs ${vendorNameDatasetNameUniverse}.cs
 
-# In the QuantConnect.DataSource.csproj file, rename the MyCustomDataType class to {vendorNameDatasetName}
-sed -i "s/MyCustomDataType/$vendorNameDatasetName/g" QuantConnect.DataSource.csproj
-sed -i "s/Demonstration.cs/${vendorNameDatasetName}Algorithm.cs/g" QuantConnect.DataSource.csproj
-sed -i "s/DemonstrationUniverse.cs/${vendorNameDatasetNameUniverse}SelectionAlgorithm.cs/g" QuantConnect.DataSource.csproj
+# In the QuantConnect.DataSource.MetaTrader.csproj file, rename the MyCustomDataType class to {vendorNameDatasetName}
+sed -i "s/MyCustomDataType/$vendorNameDatasetName/g" QuantConnect.DataSource.MetaTrader.csproj
+sed -i "s/Demonstration.cs/${vendorNameDatasetName}Algorithm.cs/g" QuantConnect.DataSource.MetaTrader.csproj
+sed -i "s/DemonstrationUniverse.cs/${vendorNameDatasetNameUniverse}SelectionAlgorithm.cs/g" QuantConnect.DataSource.MetaTrader.csproj
 
 # In the {vendorNameDatasetName}.cs file, rename the MyCustomDataType class to {vendorNameDatasetName}
 sed -i "s/MyCustomDataType/$vendorNameDatasetName/g" ${vendorNameDatasetName}.cs

@@ -22,7 +22,7 @@ using ProtoBuf.Meta;
 using Newtonsoft.Json;
 using NUnit.Framework;
 using QuantConnect.Data;
-using QuantConnect.DataSource;
+using QuantConnect.DataSource.MetaTrader;
 
 namespace QuantConnect.DataLibrary.Tests
 {

@@ -21,13 +21,13 @@ using System.IO;
 using QuantConnect.Data;
 using System.Collections.Generic;
 
-namespace QuantConnect.DataSource
+namespace QuantConnect.DataSource.MetaTrader.QuantConnect.DataSource.MetaTrader.MetaTrader
 {
     /// <summary>
     /// Example custom data type
     /// </summary>
     [ProtoContract(SkipConstructor = true)]
-    public class MyCustomDataType : BaseData
+    public class MetaTraderDataType : BaseData
     {
         /// <summary>
         /// Some custom data property
@@ -78,7 +78,7 @@ namespace QuantConnect.DataSource
             var csv = line.Split(',');
 
             var parsedDate = Parse.DateTimeExact(csv[0], "yyyyMMdd");
-            return new MyCustomDataType
+            return new MetaTraderDataType
             {
                 Symbol = config.Symbol,
                 SomeCustomProperty = csv[1],
@@ -92,7 +92,7 @@ namespace QuantConnect.DataSource
         /// <returns>A clone of the object</returns>
         public override BaseData Clone()
         {
-            return new MyCustomDataType
+            return new MetaTraderDataType
             {
                 Symbol = Symbol,
                 Time = Time,

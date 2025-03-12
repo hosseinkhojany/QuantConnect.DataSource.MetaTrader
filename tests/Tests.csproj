@@ -21,7 +21,7 @@
     <Using Include="NUnit.Framework.Legacy.ClassicAssert" Alias="Assert" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\QuantConnect.DataSource.csproj" />
+    <ProjectReference Include="..\QuantConnect.DataSource.MetaTrader.csproj" />
     <ProjectReference Include="..\..\Lean\Tests\QuantConnect.Tests.csproj" />
   </ItemGroup>
   <ItemGroup>

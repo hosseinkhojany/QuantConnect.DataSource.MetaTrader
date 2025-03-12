@@ -23,13 +23,13 @@ using System.Collections.Generic;
 using System.Globalization;
 using QuantConnect.Data.UniverseSelection;
 
-namespace QuantConnect.DataSource
+namespace QuantConnect.DataSource.MetaTrader.QuantConnect.DataSource.MetaTrader.MetaTrader
 {
     /// <summary>
     /// Example custom data type
     /// </summary>
     [ProtoContract(SkipConstructor = true)]
-    public class MyCustomDataUniverse : BaseDataCollection
+    public class MetaTraderDataUniverse : BaseDataCollection
     {
         /// <summary>
         /// Time passed between the date of the data and the time the data became available to us
@@ -83,16 +83,16 @@ namespace QuantConnect.DataSource
         /// <returns>New instance</returns>
         public override BaseData Reader(SubscriptionDataConfig config, string line, DateTime date, bool isLiveMode)
         {
-            var csv = line.Split(','); 
+            var csv = line.Split(',');
 
-            var someNumericProperty = decimal.Parse(csv[2], NumberStyles.Any, CultureInfo.InvariantCulture); 
+            var someNumericProperty = decimal.Parse(csv[2], NumberStyles.Any, CultureInfo.InvariantCulture);
 
-            return new MyCustomDataUniverse
+            return new MetaTraderDataUniverse
             {
                 Symbol = new Symbol(SecurityIdentifier.Parse(csv[0]), csv[1]),
                 SomeNumericProperty = someNumericProperty,
                 SomeCustomProperty = csv[3],
-                Time =  date - _period,
+                Time = date - _period,
                 Value = someNumericProperty
             };
         }
@@ -145,7 +145,7 @@ namespace QuantConnect.DataSource
         /// </summary>
         public override BaseData Clone()
         {
-            return new MyCustomDataUniverse
+            return new MetaTraderDataUniverse
             {
                 Symbol = Symbol,
                 Time = Time,

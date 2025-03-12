@@ -1,4 +1,4 @@
-﻿/*
+/*
  * QUANTCONNECT.COM - Democratizing Finance, Empowering Individuals.
  * Lean Algorithmic Trading Engine v2.0. Copyright 2014 QuantConnect Corporation.
  *
@@ -19,22 +19,22 @@ using QuantConnect.Data;
 using System.Collections.Generic;
 using QuantConnect.Util;
 
-namespace QuantConnect.Lean.DataSource.MyCustom
+namespace QuantConnect.DataSource.MetaTrader.QuantConnect.DataSource.MetaTrader.MetaTrader
 {
     /// <summary>
     /// Data downloader class for pulling data from Data Provider
     /// </summary>
-    public class MyCustomDataDownloader : IDataDownloader, IDisposable
+    public class MetaTraderDataDownloader : IDataDownloader, IDisposable
     {
-        /// <inheritdoc cref="MyCustomDataProvider"/>
-        private readonly MyCustomDataProvider _myCustomDataProvider;
+        /// <inheritdoc cref="MetaTraderDataProvider"/>
+        private readonly MetaTraderDataProvider _myCustomDataProvider;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="MyCustomDataDownloader"/>
+        /// Initializes a new instance of the <see cref="MetaTraderDataDownloader"/>
         /// </summary>
-        public MyCustomDataDownloader()
+        public MetaTraderDataDownloader()
         {
-            _myCustomDataProvider = new MyCustomDataProvider();
+            _myCustomDataProvider = new MetaTraderDataProvider();
         }
 
         /// <summary>
