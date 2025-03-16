@@ -15,54 +15,177 @@
 */
 
 using System;
-using NodaTime;
-using QuantConnect.Data;
-using QuantConnect.Util;
-using QuantConnect.Interfaces;
 using System.Collections.Generic;
+using System.Threading;
+using MT;
+using MtApi;
+using MtApi5;
+using MtProxyUI.SharedQC;
+using NodaTime;
+using QuantConnect.Configuration;
+using QuantConnect.Data;
+using QuantConnect.Data.Market;
+using QuantConnect.Interfaces;
 using QuantConnect.Lean.Engine.DataFeeds;
 using QuantConnect.Lean.Engine.HistoricalData;
+using QuantConnect.Logging;
+using QuantConnect.Util;
 
-namespace QuantConnect.DataSource.MetaTrader.QuantConnect.DataSource.MetaTrader.MetaTrader
+namespace QuantConnect.DataSource.MetaTrader
 {
-    /// <summary>
-    /// Implementation of Custom Data Provider
-    /// </summary>
+    
     public class MetaTraderDataProvider : SynchronizingHistoryProvider, IDataQueueHandler
     {
-        /// <summary>
-        /// <inheritdoc cref="IDataAggregator"/>
-        /// </summary>
-        private readonly IDataAggregator _dataAggregator;
+        
+        private SymbolMapper symbolMapper = new();
+        private EventBasedDataQueueHandlerSubscriptionManager _subscriptionManager;
+        private List<SubscriptionDataConfig> SubscribedSymbols = [];
+        private IDataAggregator aggregator;
+        private Packets.LiveNodePacket job;
+        private IAlgorithm algorithm;
 
-        /// <summary>
-        /// <inheritdoc cref="EventBasedDataQueueHandlerSubscriptionManager"/>
-        /// </summary>
-        private readonly EventBasedDataQueueHandlerSubscriptionManager _subscriptionManager;
+        private IMT metaTrader;
+        private MTType mtType = MTType.MT5;
+        private string port = "8228";
+        private bool _isInitialized;
+        
 
-        /// <summary>
-        /// Returns true if we're currently connected to the Data Provider
-        /// </summary>
+        
+
+        
         public bool IsConnected { get; }
 
-        /// <inheritdoc cref="HistoryProviderBase.Initialize(HistoryProviderInitializeParameters)"/>
+        
+        public MT_ENUM_TIMEFRAMES ConvertResolutionToMtTimeframe(Resolution resolution)
+        {
+            switch (resolution)
+            {
+                case Resolution.Tick:
+                    return MT_ENUM_TIMEFRAMES.PERIOD_CURRENT;
+                case Resolution.Second:
+                    return MT_ENUM_TIMEFRAMES.PERIOD_CURRENT;
+                case Resolution.Minute:
+                    return MT_ENUM_TIMEFRAMES.PERIOD_M1;
+                case Resolution.Hour:
+                    return MT_ENUM_TIMEFRAMES.PERIOD_H1;
+                case Resolution.Daily:
+                    return MT_ENUM_TIMEFRAMES.PERIOD_D1;
+            }
+
+            return MT_ENUM_TIMEFRAMES.PERIOD_CURRENT;
+        }
+        
+        private bool AddSymbolSub(IEnumerable<Symbol> symbols, TickType tickType)
+        {
+            foreach (var instrument in SubscribedSymbols)
+            {
+                metaTrader.AddSymbolToChart(SymbolMapper.ConvertLeanSymbolToOandaSymbol(instrument.Symbol.Value), ConvertResolutionToMtTimeframe(instrument.Resolution));
+            }
+            return true;
+        }
+        private bool RemoveSymbolSub(IEnumerable<Symbol> symbols, TickType tickType)
+        {
+            foreach (var instrument in SubscribedSymbols)
+            {
+                metaTrader.RemoveSymbolFromChart(SymbolMapper.ConvertLeanSymbolToOandaSymbol(instrument.Symbol.Value), ConvertResolutionToMtTimeframe(instrument.Resolution));
+            }
+            return true;
+        }
+        public void OnPricingDataReceived(Object sender, Object data)
+        {
+            bool IsSymbolDataValid(string symbol)
+            {
+                bool founded = false;
+                foreach (var t in SubscribedSymbols)
+                {
+                    if (t.Symbol.Value == symbol)
+                    {
+                        founded = true;
+                        break;
+                    }
+                }
+
+                return founded;
+            }
+
+            Log.Trace("OnPricingDataReceived()(MetaTrader):");
+            if (data is Mt5QuoteEventArgs)
+            {            
+                Mt5QuoteEventArgs mt5QuoteArg = data as Mt5QuoteEventArgs;
+                if (!IsSymbolDataValid(mt5QuoteArg.Quote.Instrument))
+                {
+                    return;
+                }
+
+                var securityType = symbolMapper.GetBrokerageSecurityType(mt5QuoteArg.Quote.Instrument);
+                var symbol = symbolMapper.GetLeanSymbol(mt5QuoteArg.Quote.Instrument, securityType, Market.Oanda);
+               
+                aggregator.Update(new Tick(
+                    mt5QuoteArg.Quote.Time,
+                    symbol,
+                    (decimal)mt5QuoteArg.Quote.Bid,
+                    (decimal)mt5QuoteArg.Quote.Ask
+                    ));
+            }else if (data is MtQuoteEventArgs)
+            {
+                MtQuoteEventArgs mtQuoteArg = data as MtQuoteEventArgs;
+                if (!IsSymbolDataValid(mtQuoteArg.Quote.Instrument))
+                {
+                    return;
+                }
+                var securityType = symbolMapper.GetBrokerageSecurityType(mtQuoteArg.Quote.Instrument);
+                var symbol = symbolMapper.GetLeanSymbol(mtQuoteArg.Quote.Instrument, securityType, Market.Oanda);
+               
+                aggregator.Update(new Tick(
+                    new DateTime(),
+                    symbol,
+                    (decimal)mtQuoteArg.Quote.Bid,
+                    (decimal)mtQuoteArg.Quote.Ask
+                ));
+                
+            }
+        }
+        private void Initialize()
+        {
+            if (_isInitialized)
+            {
+                return;
+            }
+            _isInitialized = true;
+            aggregator = Composer.Instance.GetExportedValueByTypeName<IDataAggregator>(
+                Config.Get("data-aggregator", "QuantConnect.Lean.Engine.DataFeeds.AggregationManager"),
+                forceTypeNameOnExisting: false);
+            if (mtType == MTType.MT5)
+            {
+                metaTrader = new MT5(true);
+            }
+            else
+            {
+                metaTrader = new MT4(true);
+            }
+            
+            metaTrader.BeginConnect(port);
+            Thread.Sleep(3000);
+            metaTrader.QuoteUpdated += OnPricingDataReceived;
+            
+            SymbolMapper.setMtType(mtType);
+            _subscriptionManager = new EventBasedDataQueueHandlerSubscriptionManager();
+            _subscriptionManager.SubscribeImpl += AddSymbolSub;
+            _subscriptionManager.UnsubscribeImpl += RemoveSymbolSub;
+
+        }
         public override void Initialize(HistoryProviderInitializeParameters parameters)
         { }
 
-        /// <inheritdoc cref="MetaTraderDataProvider.GetHistory(IEnumerable{HistoryRequest}, DateTimeZone)"/>
         public override IEnumerable<Slice> GetHistory(IEnumerable<HistoryRequest> requests, DateTimeZone sliceTimeZone)
         {
-            // Create subscription objects from the configs
             var subscriptions = new List<Subscription>();
             foreach (var request in requests)
             {
-                // Retrieve the history for the current request
                 var history = GetHistory(request);
 
                 if (history == null)
                 {
-                    // If history is null, it indicates that the request contains wrong parameters
-                    // Handle the case where the request parameters are incorrect
                     continue;
                 }
 
@@ -70,7 +193,6 @@ namespace QuantConnect.DataSource.MetaTrader.QuantConnect.DataSource.MetaTrader.
                 subscriptions.Add(subscription);
             }
 
-            // Validate that at least one subscription is valid; otherwise, return null
             if (subscriptions.Count == 0)
             {
                 return null;
@@ -79,60 +201,42 @@ namespace QuantConnect.DataSource.MetaTrader.QuantConnect.DataSource.MetaTrader.
             return CreateSliceEnumerableFromSubscriptions(subscriptions, sliceTimeZone);
         }
 
-        /// <summary>
-        /// Subscribe to the specified configuration
-        /// </summary>
-        /// <param name="dataConfig">defines the parameters to subscribe to a data feed</param>
-        /// <param name="newDataAvailableHandler">handler to be fired on new data available</param>
-        /// <returns>The new enumerator for this subscription request</returns>
         public IEnumerator<BaseData> Subscribe(SubscriptionDataConfig dataConfig, EventHandler newDataAvailableHandler)
         {
+
+            Logging.Log.Trace("Subscribe(MetaTrader):");
             if (!CanSubscribe(dataConfig.Symbol))
             {
                 return null;
             }
 
-            var enumerator = _dataAggregator.Add(dataConfig, newDataAvailableHandler);
+            var enumerator = aggregator.Add(dataConfig, newDataAvailableHandler);
             _subscriptionManager.Subscribe(dataConfig);
+            SubscribedSymbols.Add(dataConfig);
 
             return enumerator;
         }
 
-        /// <summary>
-        /// Removes the specified configuration
-        /// </summary>
-        /// <param name="dataConfig">Subscription config to be removed</param>
         public void Unsubscribe(SubscriptionDataConfig dataConfig)
         {
             _subscriptionManager.Unsubscribe(dataConfig);
-            _dataAggregator.Remove(dataConfig);
+            aggregator.Remove(dataConfig);
+            SubscribedSymbols.Remove(dataConfig);
         }
 
-        /// <summary>
-        /// Sets the job we're subscribing for
-        /// </summary>
-        /// <param name="job">Job we're subscribing for</param>
-        /// <exception cref="NotImplementedException"></exception>
         public void SetJob(Packets.LiveNodePacket job)
         {
-
+            Log.Trace("SetJob(MetaTrader):");
+            this.job = job;
+            Initialize();
         }
-
-        /// <summary>
-        /// Dispose of unmanaged resources.
-        /// </summary>
         public void Dispose()
         {
-            _dataAggregator?.DisposeSafely();
+            aggregator?.DisposeSafely();
             _subscriptionManager?.DisposeSafely();
             throw new NotImplementedException();
         }
 
-        /// <summary>
-        /// Gets the history for the requested security
-        /// </summary>
-        /// <param name="request">The historical data request</param>
-        /// <returns>An enumerable of BaseData points</returns>
         private IEnumerable<BaseData> GetHistory(HistoryRequest request)
         {
             if (!CanSubscribe(request.Symbol))
@@ -142,20 +246,14 @@ namespace QuantConnect.DataSource.MetaTrader.QuantConnect.DataSource.MetaTrader.
 
             throw new NotImplementedException();
         }
-
-        /// <summary>
-        /// Checks if this Data provider supports the specified symbol
-        /// </summary>
-        /// <param name="symbol">The symbol</param>
-        /// <returns>returns true if Data Provider supports the specified symbol; otherwise false</returns>
+        
         private bool CanSubscribe(Symbol symbol)
         {
             if (symbol.Value.IndexOfInvariant("universe", true) != -1 || symbol.IsCanonical())
             {
                 return false;
             }
-
-            throw new NotImplementedException();
+            return true;
         }
     }
 }
